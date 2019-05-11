@@ -12,3 +12,6 @@ Como se menciona arriba, las modificaciones realizadas han sido únicamente con 
 #### Problemas
 * El registro de los tiempos para la realización del gráfico ha sido a mano porque al guardarlo directamente desde *test.c* se guardaban mal los valores (en negativo).
 * Parece que el primer bloque después de cifrarlo no se descifra bien, pero el resto del mensaje sí. No hemos conseguido saber cuál es el problema pero para analizar tiempos y complejidad esto es irrelevante.
+
+#### Resultado
+![Gráfico de tiempos](timeplot.png)
