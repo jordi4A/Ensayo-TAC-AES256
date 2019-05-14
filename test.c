@@ -34,6 +34,7 @@ int main(int argc, char const *argv[]) {
     }
 
     int m_size = strtol(argv[1], NULL, 10) * block_size;
+    printf("Número de bytes del mensaje: %d\n", m_size);
     uint8_t message[m_size];    // Creamos array del tamaño deseado
 
 

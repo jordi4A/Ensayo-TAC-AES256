@@ -37,6 +37,9 @@ NOTE:   String length must be evenly divisible by 16byte (str_len % 16 == 0)
 /*****************************************************************************/
 #include <stdint.h>
 #include <string.h> // CBC mode, for memset
+#include <time.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include "aes.h"
 
 /*****************************************************************************/
@@ -63,7 +66,7 @@ NOTE:   String length must be evenly divisible by 16byte (str_len % 16 == 0)
   #define MULTIPLY_AS_A_FUNCTION 0
 #endif
 
-
+int pasos;
 
 
 /*****************************************************************************/
@@ -157,6 +160,7 @@ static void KeyExpansion(uint8_t* RoundKey, const uint8_t* Key)
   // The first round key is the key itself.
   for (i = 0; i < Nk; ++i)
   {
+    pasos++;
     RoundKey[(i * 4) + 0] = Key[(i * 4) + 0];
     RoundKey[(i * 4) + 1] = Key[(i * 4) + 1];
     RoundKey[(i * 4) + 2] = Key[(i * 4) + 2];
@@ -167,6 +171,7 @@ static void KeyExpansion(uint8_t* RoundKey, const uint8_t* Key)
   for (i = Nk; i < Nb * (Nr + 1); ++i)
   {
     {
+      pasos++;
       k = (i - 1) * 4;
       tempa[0]=RoundKey[k + 0];
       tempa[1]=RoundKey[k + 1];
@@ -247,6 +252,7 @@ static void AddRoundKey(uint8_t round, state_t* state, const uint8_t* RoundKey)
   {
     for (j = 0; j < 4; ++j)
     {
+      pasos++;
       (*state)[i][j] ^= RoundKey[(round * Nb * 4) + (i * Nb) + j];
     }
   }
@@ -261,6 +267,7 @@ static void SubBytes(state_t* state)
   {
     for (j = 0; j < 4; ++j)
     {
+      pasos++;
       (*state)[j][i] = getSBoxValue((*state)[j][i]);
     }
   }
@@ -271,6 +278,7 @@ static void SubBytes(state_t* state)
 // Offset = Row number. So the first row is not shifted.
 static void ShiftRows(state_t* state)
 {
+  pasos++;
   uint8_t temp;
 
   // Rotate first row 1 columns to left  
@@ -309,6 +317,7 @@ static void MixColumns(state_t* state)
   uint8_t Tmp, Tm, t;
   for (i = 0; i < 4; ++i)
   {  
+    pasos++;
     t   = (*state)[i][0];
     Tmp = (*state)[i][0] ^ (*state)[i][1] ^ (*state)[i][2] ^ (*state)[i][3] ;
     Tm  = (*state)[i][0] ^ (*state)[i][1] ; Tm = xtime(Tm);  (*state)[i][0] ^= Tm ^ Tmp ;
@@ -351,6 +360,7 @@ static void InvMixColumns(state_t* state)
   uint8_t a, b, c, d;
   for (i = 0; i < 4; ++i)
   { 
+    pasos++;
     a = (*state)[i][0];
     b = (*state)[i][1];
     c = (*state)[i][2];
@@ -373,6 +383,7 @@ static void InvSubBytes(state_t* state)
   {
     for (j = 0; j < 4; ++j)
     {
+      pasos++;
       (*state)[j][i] = getSBoxInvert((*state)[j][i]);
     }
   }
@@ -414,7 +425,7 @@ static void Cipher(state_t* state, const uint8_t* RoundKey)
 
   // Add the First round key to the state before starting the rounds.
   AddRoundKey(0, state, RoundKey); 
-  
+
   // There will be Nr rounds.
   // The first Nr-1 rounds are identical.
   // These Nr-1 rounds are executed in the loop below.
@@ -423,7 +434,7 @@ static void Cipher(state_t* state, const uint8_t* RoundKey)
     SubBytes(state);
     ShiftRows(state);
     MixColumns(state);
-    AddRoundKey(round, state, RoundKey);
+    AddRoundKey(round, state, RoundKey); 
   }
   
   // The last round is given below.
@@ -499,6 +510,7 @@ static void XorWithIv(uint8_t* buf, const uint8_t* Iv)
 
 void AES_CBC_encrypt_buffer(struct AES_ctx *ctx, uint8_t* buf, uint32_t length)
 {
+  pasos = 0;
   uintptr_t i;
   uint8_t *Iv = ctx->Iv;
   for (i = 0; i < length; i += AES_BLOCKLEN)
@@ -511,10 +523,13 @@ void AES_CBC_encrypt_buffer(struct AES_ctx *ctx, uint8_t* buf, uint32_t length)
   }
   /* store Iv in ctx for next call */
   memcpy(ctx->Iv, Iv, AES_BLOCKLEN);
+  printf("pasos cifrado: %d\n", pasos);
+
 }
 
 void AES_CBC_decrypt_buffer(struct AES_ctx* ctx, uint8_t* buf,  uint32_t length)
 {
+  pasos = 0;
   uintptr_t i;
   uint8_t storeNextIv[AES_BLOCKLEN];
   for (i = 0; i < length; i += AES_BLOCKLEN)
@@ -525,7 +540,7 @@ void AES_CBC_decrypt_buffer(struct AES_ctx* ctx, uint8_t* buf,  uint32_t length)
     memcpy(ctx->Iv, storeNextIv, AES_BLOCKLEN);
     buf += AES_BLOCKLEN;
   }
-
+  printf("Pasos descifrado: %d\n", pasos);
 }
 
 #endif // #if defined(CBC) && (CBC == 1)
